@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  backend:
+    build: ./backend
+    container_name: liver-backend
+    ports: ["8000:8000"]
+    volumes:
+      - ./backend/model.pth:/code/model.pth:ro
+  frontend:
+    build: ./frontend
+    container_name: liver-frontend
+    depends_on: [backend]
+    environment:
+      - VITE_API_URL=http://backend:8000
+    ports: ["3000:80"]
