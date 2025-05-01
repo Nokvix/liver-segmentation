@@ -7,10 +7,8 @@ WORKDIR /app
 # Копируем package.json и package-lock.json
 COPY package.json ./
 
-# Если у тебя уже есть lock-файл — раскомментируй строку ниже:
- COPY package-lock.json ./
+COPY package-lock.json ./
 
-# Используем npm install вместо npm ci
 RUN npm install
 
 # Копируем остальные файлы

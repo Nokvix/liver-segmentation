@@ -1,4 +1,3 @@
-# service/backend/app/routers/segment.py
 import base64
 import os
 import tempfile
@@ -93,6 +92,6 @@ async def segment_liver_slice(
         }
 
     finally:
-        # аккуратно чистим tmp-файл
+        # чистим tmp-файл
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
