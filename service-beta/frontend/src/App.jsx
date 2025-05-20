@@ -4,6 +4,7 @@ import FileUploader from "./components/FileUploader";
 import SliceSelector from "./components/SliceSelector";
 import MaskViewer from "./components/MaskViewer";
 import SaveButton from "./components/SaveButton";
+import EditToggle from "./components/EditToggle";
 import {segmentSlice} from "./api";
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
     const [maxSlice, setMaxSlice] = useState(0);
     const [sliceData, setSliceData] = useState(null);
     const [sliceIdx, setSliceIdx] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
 
     const stageRef = useRef(null);
 
@@ -65,16 +67,34 @@ export default function App() {
 
     return (
         <Stack spacing={2} sx={{p: 3, color: "#fff"}}>
-            <FileUploader onLoad={handleFileUpload}/>
+            <FileUploader
+                onLoad={handleFileUpload}
+            />
+
             <SliceSelector
                 value={sliceIdx}
                 max={maxSlice}
                 onChange={setSliceIdx}
             />
-            <Button disabled={!file} variant="contained" onClick={runSegmentation}>
+
+            <EditToggle
+                checked={isEditing}
+                onChange={setIsEditing}
+            />
+
+            <Button
+                disabled={!file}
+                variant="contained"
+                onClick={runSegmentation}
+            >
                 Сегментировать
             </Button>
-            <MaskViewer slice={sliceData} stageRef={stageRef}/>
+
+            <MaskViewer
+                slice={sliceData}
+                stageRef={stageRef}
+                editing={isEditing}
+            />
 
             <Box>
                 <SaveButton
