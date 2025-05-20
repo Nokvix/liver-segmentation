@@ -32,7 +32,7 @@ export default function FileUploader({ onLoad }) {
     >
       <input {...getInputProps()} />
       <Typography>
-        {isDragActive ? "Отпустите для загрузки…" : "Перетащите .nii сюда или кликните"}
+        {isDragActive ? "Отпустите для загрузки…" : "Перетащите .nii сюда или кликните и выберите нужный файл"}
       </Typography>
     </Box>
   );
