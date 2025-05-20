@@ -1,8 +1,9 @@
-import {useState} from "react";
+import {useState, useRef} from "react";
 import {Box, Button, Stack, ToggleButtonGroup, ToggleButton} from "@mui/material";
 import FileUploader from "./components/FileUploader";
 import SliceSelector from "./components/SliceSelector";
 import MaskViewer from "./components/MaskViewer";
+import SaveButton from "./components/SaveButton";
 import {segmentSlice} from "./api";
 
 export default function App() {
@@ -11,12 +12,14 @@ export default function App() {
     const [sliceData, setSliceData] = useState(null);
     const [sliceIdx, setSliceIdx] = useState(0);
 
+    const stageRef = useRef(null);
+
     const handleFileUpload = async f => {
         if (!f) return;
         setFile(f);
 
         // Делаю запрос по 0 индексу, чтобы получить число срезов в файле
-        const {data: meta} =  await segmentSlice(f, 0);
+        const {data: meta} = await segmentSlice(f, 0);
         const depth = meta.depth;
         const max = depth - 1;
         const middle = Math.floor(depth / 2);
@@ -45,6 +48,21 @@ export default function App() {
         }
     };
 
+    // функция сохранения
+    const handleSave = () => {
+        if (!stageRef.current) return;
+        // получаем Data URL всего Stage (слои + контуры)
+        const uri = stageRef.current.toDataURL({pixelRatio: 1});
+
+        // создаём ссылку и «кликаем» по ней
+        const a = document.createElement("a");
+        a.href = uri;
+        a.download = `slice_${sliceIdx}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
     return (
         <Stack spacing={2} sx={{p: 3, color: "#fff"}}>
             <FileUploader onLoad={handleFileUpload}/>
@@ -56,17 +74,15 @@ export default function App() {
             <Button disabled={!file} variant="contained" onClick={runSegmentation}>
                 Сегментировать
             </Button>
-            <MaskViewer slice={sliceData}/>
+            <MaskViewer slice={sliceData} stageRef={stageRef}/>
 
-            {/*<Box>*/}
-            {/*    <Button*/}
-            {/*        variant="contained"*/}
-            {/*        onClick={runSegmentation}*/}
-            {/*        disabled={!file}*/}
-            {/*    >*/}
-            {/*        Сегментировать*/}
-            {/*    </Button>*/}
-            {/*</Box>*/}
+            <Box>
+                <SaveButton
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={!sliceData}
+                />
+            </Box>
         </Stack>
     );
 }
