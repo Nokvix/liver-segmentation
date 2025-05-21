@@ -18,6 +18,10 @@ export default function App() {
 
     const handleFileUpload = async f => {
         if (!f) return;
+
+        if (isEditing) {
+            setIsEditing(false);
+        }
         setFile(f);
 
         // Делаю запрос по 0 индексу, чтобы получить число срезов в файле
@@ -36,6 +40,10 @@ export default function App() {
 
     const runSegmentation = async () => {
         if (!file) return;
+
+        if (isEditing) {
+            setIsEditing(false);
+        }
         try {
             const {data} = await segmentSlice(file, sliceIdx);
             setSliceData(data);
@@ -52,17 +60,22 @@ export default function App() {
 
     // функция сохранения
     const handleSave = () => {
+        if (isEditing) {
+            setIsEditing(false);
+        }
         if (!stageRef.current) return;
-        // получаем Data URL всего Stage (слои + контуры)
-        const uri = stageRef.current.toDataURL({pixelRatio: 1});
+        setTimeout(() => {
+            // получаем Data URL всего Stage (слои + контуры)
+            const uri = stageRef.current.toDataURL({pixelRatio: 1});
 
-        // создаём ссылку и «кликаем» по ней
-        const a = document.createElement("a");
-        a.href = uri;
-        a.download = `slice_${sliceIdx}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+            // создаём ссылку и «кликаем» по ней
+            const a = document.createElement("a");
+            a.href = uri;
+            a.download = `slice_${sliceIdx}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }, 0)
     };
 
     return (
