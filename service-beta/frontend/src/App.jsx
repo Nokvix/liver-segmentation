@@ -38,7 +38,7 @@ const CustomSlider = styled(Slider)(({theme}) => ({
     },
 }));
 
-const VIEW_SIZE = 512;
+export const VIEW_SIZE = 450;
 
 export default function App() {
     const [file, setFile] = useState(null);
@@ -120,9 +120,20 @@ export default function App() {
 
     return (
         <Stack spacing={2} sx={{p: 3, color: "#fff", width: "100%"}}>
-            <FileUploader
-                onLoad={handleFileUpload}
-            />
+            <Box
+                display="flex"
+                justifyContent="center"
+                sx={{mb: 0, width: "100%"}}
+            >
+                <FileUploader
+                    onLoad={handleFileUpload}
+                    sx={{
+                        width: VIEW_SIZE + 100,  // 612px
+                        maxWidth: "90%",
+                        borderRadius: 12
+                    }}
+                />
+            </Box>
 
             <Box
                 sx={{
@@ -143,7 +154,7 @@ export default function App() {
                     <Typography
                         variant="h6"
                         gutterBottom={false}
-                        sx={{ mb: 4 }}
+                        sx={{mb: 4}}
                     >
                         Выберите срез
                     </Typography>

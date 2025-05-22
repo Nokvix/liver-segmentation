@@ -1,10 +1,11 @@
 import React, {useRef, useState, useEffect} from "react";
 import {Stage, Layer, Image as KonvaImage, Line, Circle} from "react-konva";
 import useImage from "use-image";
+import {VIEW_SIZE} from "../App";
 
 export default function MaskViewer({slice, stageRef, editing}) {
     const origSize = 256; // Размер исходного изображения (256×256)
-    const viewSize = 512; // Размер области просмотра (512×512)
+    const viewSize = VIEW_SIZE; // Размер области просмотра (512×512)
     const baseScale = viewSize / origSize; // Базовый зум, чтобы сразу заполнить 512×512
 
     // 1) Подстраиваем фон
