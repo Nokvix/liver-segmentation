@@ -7,6 +7,8 @@ import SaveButton from "./components/SaveButton";
 import EditToggle from "./components/EditToggle";
 import {segmentSlice} from "./api";
 
+const VIEW_SIZE = 512;
+
 export default function App() {
     const [file, setFile] = useState(null);
     const [maxSlice, setMaxSlice] = useState(0);
@@ -79,42 +81,80 @@ export default function App() {
     };
 
     return (
-        <Stack spacing={2} sx={{p: 3, color: "#fff"}}>
+        <Stack spacing={2} sx={{p: 3, color: "#fff", width: "100%"}}>
             <FileUploader
                 onLoad={handleFileUpload}
             />
 
-            <SliceSelector
-                value={sliceIdx}
-                max={maxSlice}
-                onChange={setSliceIdx}
-            />
-
-            <EditToggle
-                checked={isEditing}
-                onChange={setIsEditing}
-            />
-
-            <Button
-                disabled={!file}
-                variant="contained"
-                onClick={runSegmentation}
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: 2,
+                }}
             >
-                Сегментировать
-            </Button>
-
-            <MaskViewer
-                slice={sliceData}
-                stageRef={stageRef}
-                editing={isEditing}
-            />
-
-            <Box>
-                <SaveButton
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={!sliceData}
+                <SliceSelector
+                    value={sliceIdx}
+                    max={maxSlice}
+                    onChange={setSliceIdx}
                 />
+
+                <EditToggle
+                    checked={isEditing}
+                    onChange={setIsEditing}
+                />
+            </Box>
+
+            <Box
+                sx={{
+                    position: "relative",   // для вложенных absolute
+                    width: "100%",
+                    height: VIEW_SIZE,      // чтобы parent имел высоту
+                }}
+            >
+                <Box
+                    sx={{
+                        width: VIEW_SIZE,
+                        height: VIEW_SIZE,
+                        margin: "0 auto",      // центрирует контейнер с картинкой
+                    }}
+                >
+
+                    <MaskViewer
+                        slice={sliceData}
+                        stageRef={stageRef}
+                        editing={isEditing}
+                    />
+                </Box>
+
+                <Box
+                    sx={{
+                        position: "absolute",
+                        top: "50%",            // по вертикали середина родителя
+                        // 50% от ширины родителя + половина VIEW_SIZE + небольшой отступ
+                        left: `calc(50% + ${VIEW_SIZE / 2}px + 16px)`,
+                        transform: "translateY(-50%)", // компенсируем смещение по top:50%
+
+                    }}
+                >
+                    <Stack spacing={2}>
+                        <Button
+                            disabled={!file}
+                            variant="contained"
+                            onClick={runSegmentation}
+                        >
+                            Сегментировать
+                        </Button>
+
+                        <SaveButton
+                            variant="contained"
+                            onClick={handleSave}
+                            disabled={!sliceData}
+                        />
+                    </Stack>
+                </Box>
             </Box>
         </Stack>
     );
