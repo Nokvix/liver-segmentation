@@ -8,17 +8,17 @@ export default function MaskViewer({slice, stageRef, editing, onZoomChange}) {
     const viewSize = VIEW_SIZE; // Размер области просмотра (512×512)
     const baseScale = viewSize / origSize; // Базовый зум, чтобы сразу заполнить 512×512
 
-    // 1) Подстраиваем фон
+    // Подстраиваем фон
     const [bg] = useImage(slice?.image ?? undefined);
 
-    // 2) Контуры в локальном стейте (flat-массивы точек)
+    // Контуры в локальном стейте (flat-массивы точек)
     const [contours, setContours] = useState([]);
 
-    // 3) Позиция и масштаб Stage
+    // Позиция и масштаб Stage
     const [stageScale, setStageScale] = useState(baseScale);
     const [stagePosition, setStagePosition] = useState({x: 0, y: 0});
 
-    // 4) Инициализируем contours при каждом новом slice
+    // Инициализируем contours при каждом новом slice
     useEffect(() => {
         if (!slice?.contours) {
             setContours([]);
@@ -36,7 +36,7 @@ export default function MaskViewer({slice, stageRef, editing, onZoomChange}) {
     }, [stageScale, onZoomChange]);
 
 
-    // 5) Обновление одной вершины
+    // Обновление одной вершины
     const moveVertex = (ci, vi) => e => {
         const {x, y} = e.target.position();
         const origX = x / stageScale;
@@ -49,7 +49,7 @@ export default function MaskViewer({slice, stageRef, editing, onZoomChange}) {
         });
     };
 
-    // 6) Обработчик колеса (зум)
+    // Обработчик колеса (зум)
     const handleWheel = e => {
         e.evt.preventDefault();
 
@@ -105,7 +105,7 @@ export default function MaskViewer({slice, stageRef, editing, onZoomChange}) {
             tabIndex={0} // чтобы Stage мог ловить фокус
             onFocus={e => e.target.getStage().container().focus()}
             style={{border: "1px solid #777", cursor: editing ? "default" : "grab"}}
-            draggable={editing}
+            draggable={editing && stageScale !== baseScale}
             scaleX={stageScale}
             scaleY={stageScale}
             x={stagePosition.x}
