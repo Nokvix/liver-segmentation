@@ -176,6 +176,24 @@ export default function App() {
                     checked={isEditing}
                     onChange={setIsEditing}
                 />
+
+                {/* Подсказка для режима редактирования */}
+                {isEditing && (
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                            mx: "auto",
+                            color: "rgba(255,255,255,0.8)",
+                            textAlign: "center",
+                            maxWidth: VIEW_SIZE,      // чтобы не растягивалась
+                        }}
+                    >
+                        Перетаскивайте красные точки левой кнопкой мыши;<br/>
+                        Нажатие правой кнопкой мыши по точке - удалить точку;<br/>
+                        Используйте колёсико мыши для приближения или отдаления.
+                    </Typography>
+                )}
             </Box>
 
             <Box
