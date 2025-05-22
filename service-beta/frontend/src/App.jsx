@@ -1,11 +1,42 @@
 import {useState, useRef} from "react";
-import {Box, Button, Stack, ToggleButtonGroup, ToggleButton} from "@mui/material";
+import {Box, Button, Stack, Typography, Slider, ToggleButtonGroup, ToggleButton} from "@mui/material";
 import FileUploader from "./components/FileUploader";
 import SliceSelector from "./components/SliceSelector";
 import MaskViewer from "./components/MaskViewer";
 import SaveButton from "./components/SaveButton";
 import EditToggle from "./components/EditToggle";
 import {segmentSlice} from "./api";
+import {styled} from "@mui/material/styles";
+
+const CustomSlider = styled(Slider)(({theme}) => ({
+    color: "#FF0000",
+    height: 6,
+    "& .MuiSlider-rail": {backgroundColor: "#1d1d1d", opacity: 1},
+    "& .MuiSlider-thumb": {
+        height: 16,
+        width: 16,
+        backgroundColor: "#FF0000",
+        "&:hover, &.Mui-focusVisible, &.Mui-active": {
+            boxShadow: "none",
+        },
+    },
+    "& .MuiSlider-mark": {
+        backgroundColor: "#fff",
+        height: 0,
+        width: 0,
+    },
+    "& .MuiSlider-markLabel": {
+        color: "#fff",
+        top: 24,
+    },
+    "& .MuiSlider-valueLabel": {
+        color: "#fff",
+        backgroundColor: "transparent",
+        fontSize: "1rem",
+        top: 0,
+        "& *": {background: "transparent", color: "#fff"},
+    },
+}));
 
 const VIEW_SIZE = 512;
 
@@ -80,6 +111,13 @@ export default function App() {
         }, 0)
     };
 
+    const sliderMarks = maxSlice > 0
+        ? [
+            {value: 0, label: "0"},
+            {value: maxSlice, label: String(maxSlice)}
+        ]
+        : [];
+
     return (
         <Stack spacing={2} sx={{p: 3, color: "#fff", width: "100%"}}>
             <FileUploader
@@ -92,14 +130,33 @@ export default function App() {
                     flexDirection: "column",
                     alignItems: "center",
                     width: "100%",
-                    gap: 2,
+                    gap: 0,
                 }}
             >
-                <SliceSelector
-                    value={sliceIdx}
-                    max={maxSlice}
-                    onChange={setSliceIdx}
-                />
+                <Box sx={{
+                    width: VIEW_SIZE,
+                    maxWidth: "90%",
+                    mx: "auto",
+                    textAlign: "center",
+                    color: "#fff"
+                }}>
+                    <Typography
+                        variant="h6"
+                        gutterBottom={false}
+                        sx={{ mb: 4 }}
+                    >
+                        Выберите срез
+                    </Typography>
+
+                    <CustomSlider
+                        value={sliceIdx}              // ← всегда число, никогда undefined
+                        min={0}
+                        max={maxSlice}                // ← всегда число
+                        onChange={(e, value) => setSliceIdx(value)} // контролируемо меняем
+                        valueLabelDisplay="on"
+                        marks={sliderMarks}           // либо массив, либо пустой массив
+                    />
+                </Box>
 
                 <EditToggle
                     checked={isEditing}
