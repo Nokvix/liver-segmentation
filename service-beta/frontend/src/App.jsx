@@ -39,6 +39,8 @@ const CustomSlider = styled(Slider)(({theme}) => ({
 }));
 
 export const VIEW_SIZE = 450;
+export const ORIG_SIZE = 256;
+const BASE_SCALE = VIEW_SIZE / ORIG_SIZE;
 
 export default function App() {
     const [file, setFile] = useState(null);

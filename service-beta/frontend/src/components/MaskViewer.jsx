@@ -1,10 +1,10 @@
 import React, {useRef, useState, useEffect} from "react";
 import {Stage, Layer, Image as KonvaImage, Line, Circle} from "react-konva";
 import useImage from "use-image";
-import {VIEW_SIZE} from "../App";
+import {VIEW_SIZE, ORIG_SIZE} from "../App";
 
 export default function MaskViewer({slice, stageRef, editing}) {
-    const origSize = 256; // Размер исходного изображения (256×256)
+    const origSize = ORIG_SIZE; // Размер исходного изображения (256×256)
     const viewSize = VIEW_SIZE; // Размер области просмотра (512×512)
     const baseScale = viewSize / origSize; // Базовый зум, чтобы сразу заполнить 512×512
 
@@ -25,7 +25,7 @@ export default function MaskViewer({slice, stageRef, editing}) {
             return;
         }
         setContours(slice.contours.map(c => c.flat(2)));
-        // Сбрасываем зум/пан при переключении тома (по желанию):
+        // Сбрасываем зум/пан при переключении тома:
         setStageScale(baseScale);
         setStagePosition({x: 0, y: 0});
     }, [slice]);
@@ -59,6 +59,12 @@ export default function MaskViewer({slice, stageRef, editing}) {
 
         // ограничиваем масштаб между baseScale и 10*baseScale
         const clamped = Math.max(baseScale, Math.min(10 * baseScale, newScale));
+
+        if (clamped === baseScale) {
+            setStageScale(clamped);
+            setStagePosition({x: 0, y: 0});
+            return;
+        }
 
         // чтобы зум был «от» указателя мыши, корректируем позицию сцены
         const mousePointTo = {
