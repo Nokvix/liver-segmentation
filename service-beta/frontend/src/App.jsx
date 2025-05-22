@@ -214,6 +214,14 @@ export default function App() {
                             disabled={!file}
                             variant="contained"
                             onClick={runSegmentation}
+                            sx={{
+                                backgroundColor: '#fff',
+                                color: '#000',
+                                borderRadius: '999px',
+                                '&:hover': {
+                                    backgroundColor: '#aaaaaa',     // чуть другой оттенок при hover
+                                },
+                            }}
                         >
                             Сегментировать
                         </Button>
@@ -222,6 +230,14 @@ export default function App() {
                             variant="contained"
                             onClick={handleSave}
                             disabled={!sliceData}
+                            sx={{
+                                backgroundColor: '#fff',
+                                color: '#000',
+                                borderRadius: '999px',
+                                '&:hover': {
+                                    backgroundColor: '#aaaaaa',     // чуть другой оттенок при hover
+                                },
+                            }}
                         />
                     </Stack>
                 </Box>
