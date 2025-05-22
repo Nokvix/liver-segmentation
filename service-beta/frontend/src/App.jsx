@@ -1,4 +1,4 @@
-import {useState, useRef} from "react";
+import React, {useState, useRef} from "react";
 import {Box, Button, Stack, Typography, Slider, ToggleButtonGroup, ToggleButton} from "@mui/material";
 import FileUploader from "./components/FileUploader";
 import SliceSelector from "./components/SliceSelector";
@@ -48,6 +48,7 @@ export default function App() {
     const [sliceData, setSliceData] = useState(null);
     const [sliceIdx, setSliceIdx] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
+    const [zoomPct, setZoomPct] = useState(100);
 
     const stageRef = useRef(null);
 
@@ -186,6 +187,7 @@ export default function App() {
             >
                 <Box
                     sx={{
+                        position: "relative",
                         width: VIEW_SIZE,
                         height: VIEW_SIZE,
                         margin: "0 auto",      // центрирует контейнер с картинкой
@@ -196,7 +198,27 @@ export default function App() {
                         slice={sliceData}
                         stageRef={stageRef}
                         editing={isEditing}
+                        onZoomChange={scale => {
+                            setZoomPct(Math.round((scale / BASE_SCALE) * 100));
+                        }}
                     />
+
+                    {/* Индикатор масштаба */}
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            background: "rgba(0,0,0,0.5)",
+                            color: "#fff",
+                            px: 1,
+                            borderRadius: 1,
+                            fontSize: "0.875rem",
+                        }}
+                    >
+                        Масштаб: {zoomPct}% {/*выводим процент*/}
+                    </Typography>
                 </Box>
 
                 <Box

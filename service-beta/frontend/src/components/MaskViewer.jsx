@@ -3,7 +3,7 @@ import {Stage, Layer, Image as KonvaImage, Line, Circle} from "react-konva";
 import useImage from "use-image";
 import {VIEW_SIZE, ORIG_SIZE} from "../App";
 
-export default function MaskViewer({slice, stageRef, editing}) {
+export default function MaskViewer({slice, stageRef, editing, onZoomChange}) {
     const origSize = ORIG_SIZE; // Размер исходного изображения (256×256)
     const viewSize = VIEW_SIZE; // Размер области просмотра (512×512)
     const baseScale = viewSize / origSize; // Базовый зум, чтобы сразу заполнить 512×512
@@ -29,6 +29,12 @@ export default function MaskViewer({slice, stageRef, editing}) {
         setStageScale(baseScale);
         setStagePosition({x: 0, y: 0});
     }, [slice]);
+
+    // при каждом изменении масштаба вызываем callback
+    useEffect(() => {
+        onZoomChange?.(stageScale);
+    }, [stageScale, onZoomChange]);
+
 
     // 5) Обновление одной вершины
     const moveVertex = (ci, vi) => e => {
