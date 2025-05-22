@@ -6,7 +6,7 @@ export default function FileUploader({onLoad, sx}) {
     const onDrop = useCallback(
         (accepted) => {
             if (accepted && accepted.length) {
-                onLoad?.(accepted[0]);        // <- вызываем только если функция
+                onLoad?.(accepted[0]);        // вызываем только если функция
             }
         },
         [onLoad]

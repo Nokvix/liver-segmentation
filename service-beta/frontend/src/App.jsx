@@ -163,12 +163,12 @@ export default function App() {
                     </Typography>
 
                     <CustomSlider
-                        value={sliceIdx}              // ← всегда число, никогда undefined
+                        value={sliceIdx}
                         min={0}
-                        max={maxSlice}                // ← всегда число
+                        max={maxSlice}
                         onChange={(e, value) => setSliceIdx(value)} // контролируемо меняем
                         valueLabelDisplay="on"
-                        marks={sliderMarks}           // либо массив, либо пустой массив
+                        marks={sliderMarks}
                     />
                 </Box>
 
