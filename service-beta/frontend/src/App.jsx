@@ -1,11 +1,11 @@
-import React, {useState, useRef} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import {Box, Button, Stack, Typography, Slider, ToggleButtonGroup, ToggleButton} from "@mui/material";
 import FileUploader from "./components/FileUploader";
 import SliceSelector from "./components/SliceSelector";
 import MaskViewer from "./components/MaskViewer";
 import SaveButton from "./components/SaveButton";
 import EditToggle from "./components/EditToggle";
-import {segmentSlice} from "./api";
+import {uploadFile, segmentSlice} from "./api";
 import {styled} from "@mui/material/styles";
 
 const CustomSlider = styled(Slider)(({theme}) => ({
@@ -43,7 +43,8 @@ export const ORIG_SIZE = 256;
 const BASE_SCALE = VIEW_SIZE / ORIG_SIZE;
 
 export default function App() {
-    const [file, setFile] = useState(null);
+    // const [file, setFile] = useState(null);
+    const [fileId, setFileId] = useState(null);
     const [maxSlice, setMaxSlice] = useState(0);
     const [sliceData, setSliceData] = useState(null);
     const [sliceIdx, setSliceIdx] = useState(0);
@@ -58,30 +59,38 @@ export default function App() {
         if (isEditing) {
             setIsEditing(false);
         }
-        setFile(f);
-
-        // Делаю запрос по 0 индексу, чтобы получить число срезов в файле
-        const {data: meta} = await segmentSlice(f, 0);
-        const depth = meta.depth;
-        const max = depth - 1;
-        const middle = Math.floor(depth / 2);
-
-        setMaxSlice(max);
-        setSliceIdx(middle);
-
-        // Делаю запрос по серединному срезу, чтобы пользователь сразу видел предикт
-        const {data: middleSlice} = await segmentSlice(f, middle)
-        setSliceData(middleSlice)
+        // Загружаем файл на бэкенд → получаем file_id
+        const {data: {file_id}} = await uploadFile(f);
+        setFileId(file_id);
     };
 
+    // Когда fileId изменился - запускаю первый запрос сегментации
+    useEffect(() => {
+        if (!fileId) return;
+
+        (async () => {
+            const {data: meta} = await segmentSlice(fileId, 0);
+            const depth = meta.depth;
+            const max = depth - 1;
+            const middle = Math.floor(depth / 2);
+
+            setMaxSlice(max);
+            setSliceIdx(middle);
+
+            // Делаю запрос по серединному срезу, чтобы пользователь сразу видел предикт
+            const {data: middleSlice} = await segmentSlice(fileId, middle);
+            setSliceData(middleSlice);
+        })();
+    }, [fileId]);
+
     const runSegmentation = async () => {
-        if (!file) return;
+        if (!fileId) return;
 
         if (isEditing) {
             setIsEditing(false);
         }
         try {
-            const {data} = await segmentSlice(file, sliceIdx);
+            const {data} = await segmentSlice(fileId, sliceIdx);
             setSliceData(data);
 
             // число срезов обновляем постоянно
@@ -251,7 +260,7 @@ export default function App() {
                 >
                     <Stack spacing={2}>
                         <Button
-                            disabled={!file}
+                            disabled={!fileId}
                             variant="contained"
                             onClick={runSegmentation}
                             sx={{
