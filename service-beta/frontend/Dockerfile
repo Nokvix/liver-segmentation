@@ -1,24 +1,15 @@
-# Используем официальный Node-образ
+
 FROM node:18 AS builder
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем package.json и package-lock.json
-COPY package.json ./
-
-COPY package-lock.json ./
-
+# Устанавливаем зависимости
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Копируем остальные файлы
+# Копируем весь фронтенд и собираем
 COPY . .
-
-# Собираем приложение
+# результат - /app/dist
 RUN npm run build
 
-# ====================
-# Production image
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
+

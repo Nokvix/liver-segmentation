@@ -1,15 +1,56 @@
-version: "3.9"
+version: '3.8'
+
 services:
+  # --- Backend ---
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: liver-backend
-    ports: ["8000:8000"]
     volumes:
-      - ./backend/model.pth:/code/model.pth:ro
-  frontend:
-    build: ./frontend
-    container_name: liver-frontend
-    depends_on: [backend]
-    environment:
-      - VITE_API_URL=http://backend:8000
-    ports: ["3000:80"]
+      - filedata:/data/uploads
+    expose:
+      - "8000"
+    networks:
+      - liver-net
+
+  # --- Frontend Builder ---
+  frontend-builder:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: liver-frontend-builder
+    # монтируем выделенный volume в точку, куда уже собрался /app/dist
+    volumes:
+      - frontend-dist:/mnt/dist
+    # копируем сборку из /app/dist → /mnt/dist (в наш volume)
+    command: sh -c "cp -r /app/dist/. /mnt/dist && echo '✅ dist готово'"
+    networks:
+      - liver-net
+
+  # --- Nginx (статика + прокси) ---
+  nginx:
+    image: nginx:alpine
+    container_name: liver-nginx
+    depends_on:
+      - backend
+      - frontend-builder
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # монтируем наш volume с готовым dist в папку nginx
+      - frontend-dist:/usr/share/nginx/html:ro
+    networks:
+      - liver-net
+
+volumes:
+  filedata:
+  frontend-dist:
+
+networks:
+  liver-net:
+    driver: bridge
+

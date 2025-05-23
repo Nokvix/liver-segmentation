@@ -1,12 +1,11 @@
 import base64
 import os
-import tempfile
 from typing import List
 
 import cv2
 import numpy as np
 import torch
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..utils.contours import find_contours
@@ -14,6 +13,7 @@ from ..utils.model import DEVICE
 from ..utils.preprocess import apply_transformations, preprocess_im, read_nii
 
 
+UPLOAD_DIR = "/data/uploads"
 router = APIRouter(prefix="/segment", tags=["Segmentation"])
 
 
@@ -33,65 +33,106 @@ class SegmentationResponse(BaseModel):
     )
 
 
-@router.post("/", response_model=SegmentationResponse, summary="Сегментация среза")
+@router.get("/", response_model=SegmentationResponse, summary="Сегментация среза")
 async def segment_liver_slice(
-    request: Request,
-    file: UploadFile = File(..., description="Файл объёма .nii / .nii.gz"),
-    slice_idx: int = Query(..., ge=0, description="Номер среза (ось Z)"),
+        request: Request,
+        file_id: str = Query(..., description="ID загруженного файла"),
+        slice_idx: int = Query(..., ge=0, description="Номер среза (ось Z)"),
 ):
-    """
-    Получает один срез КТ, предсказывает маску печени,
-    возвращает маску, контур **и** сам срез (PNG base64),
-    чтобы фронт мог нарисовать подложку + контур.
-    """
-    model = request.app.state.model  # ← загружен в lifespan
-    tmp_path: str | None = None
+    # 1. находим сохранённый файл
+    for ext in (".nii.gz", ".nii"):
+        save_path = os.path.join(UPLOAD_DIR, f"{file_id}{ext}")
+        if os.path.exists(save_path):
+            break
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
-    try:
-        # -------- 1. сохраняем загруженный `.nii` во временный файл -------- #
-        suffix = ".nii.gz" if file.filename.endswith(".gz") else ".nii"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
-
-        # -------- 2. читаем объём и валидируем индекс -------- #
-        volume = read_nii(tmp_path)  # (H, W, Z)
-        if slice_idx >= volume.shape[2]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"slice_idx out of range 0–{volume.shape[2] - 1}",
-            )
-
-        # -------- 3. препроцессинг одного среза -------- #
-        slice_raw = volume[:, :, slice_idx]
-        slice_norm = preprocess_im(slice_raw)  # 0-1 float32
-        batch = apply_transformations(slice_norm).to(DEVICE)  # (1,1,256,256)
-
-        # -------- 4. инференс -------- #
-        with torch.no_grad():
-            logit = model(batch)
-
-        mask = (torch.sigmoid(logit) > 0.5).cpu().numpy()[0, 0].astype(np.uint8)
-
-        # -------- 5. кодируем сам срез в PNG-base64 -------- #
-        slice_png = (slice_norm * 255).astype(np.uint8)  # обратно в 0-255
-        _, buf = cv2.imencode(".png", slice_png)
-        data_uri = (
-            "data:image/png;base64," + base64.b64encode(buf).decode("ascii")
+    # 2. читаем весь объём и проверяем диапазон
+    volume = read_nii(save_path)  # (H, W, Z)
+    if slice_idx >= volume.shape[2]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"slice_idx out of range 0–{volume.shape[2] - 1}",
         )
 
-        # -------- 6. контуры -------- #
-        contours = find_contours(mask)
+    # 3. остальной код без изменений:
+    slice_raw = volume[:, :, slice_idx]
+    slice_norm = preprocess_im(slice_raw)
+    batch = apply_transformations(slice_norm).to(DEVICE)
+    with torch.no_grad():
+        logit = request.app.state.model(batch)
+    mask = (torch.sigmoid(logit) > 0.5).cpu().numpy()[0, 0].astype(np.uint8)
+    _, buf = cv2.imencode(".png", (slice_norm * 255).astype(np.uint8))
+    data_uri = "data:image/png;base64," + base64.b64encode(buf).decode("ascii")
+    contours = find_contours(mask)
 
-        return {
-            "slice_index": slice_idx,
-            "mask": mask.tolist(),
-            "contours": contours,
-            "image": data_uri,
-            "depth": int(volume.shape[2])
-        }
+    return {
+        "slice_index": slice_idx,
+        "depth": int(volume.shape[2]),
+        "mask": mask.tolist(),
+        "contours": contours,
+        "image": data_uri,
+    }
 
-    finally:
-        # чистим tmp-файл
-        if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path)
+# @router.post("/", response_model=SegmentationResponse, summary="Сегментация среза")
+# async def segment_liver_slice(
+#     request: Request,
+#     file: UploadFile = File(..., description="Файл объёма .nii / .nii.gz"),
+#     slice_idx: int = Query(..., ge=0, description="Номер среза (ось Z)"),
+# ):
+#     """
+#     Получает один срез КТ, предсказывает маску печени,
+#     возвращает маску, контур **и** сам срез (PNG base64),
+#     чтобы фронт мог нарисовать подложку + контур.
+#     """
+#     model = request.app.state.model  # ← загружен в lifespan
+#     tmp_path: str | None = None
+#
+#     try:
+#         # -------- 1. сохраняем загруженный `.nii` во временный файл -------- #
+#         suffix = ".nii.gz" if file.filename.endswith(".gz") else ".nii"
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+#             tmp.write(await file.read())
+#             tmp_path = tmp.name
+#
+#         # -------- 2. читаем объём и валидируем индекс -------- #
+#         volume = read_nii(tmp_path)  # (H, W, Z)
+#         if slice_idx >= volume.shape[2]:
+#             raise HTTPException(
+#                 status_code=400,
+#                 detail=f"slice_idx out of range 0–{volume.shape[2] - 1}",
+#             )
+#
+#         # -------- 3. препроцессинг одного среза -------- #
+#         slice_raw = volume[:, :, slice_idx]
+#         slice_norm = preprocess_im(slice_raw)  # 0-1 float32
+#         batch = apply_transformations(slice_norm).to(DEVICE)  # (1,1,256,256)
+#
+#         # -------- 4. инференс -------- #
+#         with torch.no_grad():
+#             logit = model(batch)
+#
+#         mask = (torch.sigmoid(logit) > 0.5).cpu().numpy()[0, 0].astype(np.uint8)
+#
+#         # -------- 5. кодируем сам срез в PNG-base64 -------- #
+#         slice_png = (slice_norm * 255).astype(np.uint8)  # обратно в 0-255
+#         _, buf = cv2.imencode(".png", slice_png)
+#         data_uri = (
+#             "data:image/png;base64," + base64.b64encode(buf).decode("ascii")
+#         )
+#
+#         # -------- 6. контуры -------- #
+#         contours = find_contours(mask)
+#
+#         return {
+#             "slice_index": slice_idx,
+#             "mask": mask.tolist(),
+#             "contours": contours,
+#             "image": data_uri,
+#             "depth": int(volume.shape[2])
+#         }
+#
+#     finally:
+#         # чистим tmp-файл
+#         if tmp_path and os.path.exists(tmp_path):
+#             os.remove(tmp_path)
