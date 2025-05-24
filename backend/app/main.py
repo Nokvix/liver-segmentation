@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.routers import segment
+from app.routers import contour
 from .utils.model import load_segmentation_model
 import torch
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from app.core.redis import init_redis, close_redis, redis_client
 from app.service.minio_client import minio_client, MINIO_BUCKET_NAME
+
+
+
 
 
 @asynccontextmanager
@@ -55,3 +59,4 @@ app.add_middleware(
 
 
 app.include_router(segment.router)
+app.include_router(contour.router)

@@ -123,27 +123,6 @@ async def get_slice(request: Request, file_id: str, slice_idx: int = Query(..., 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-@router.post("/save-mask/", summary="Сохранить маску", description="Сохраняет маску сегментации для конкретного среза в MinIO в формате `.npy`.")
-async def save_mask(file_id: str, slice_idx: int, mask: List[List[int]]):
-    object_name = f"{file_id}_mask_{slice_idx}.npy"
-    try:
-        mask_array = np.array(mask, dtype=np.uint8)
-        with io.BytesIO() as buffer:
-            np.save(buffer, mask_array)
-            buffer.seek(0)
-            minio_client.put_object(
-                MINIO_BUCKET_NAME,
-                object_name,
-                data=buffer,
-                length=buffer.getbuffer().nbytes,
-                content_type="application/octet-stream"
-            )
-        return {"message": "Mask saved successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.get("/files/", summary="Список загруженных томов", description="Возвращает список всех загруженных `.nii` или `.nii.gz` файлов (только ID).")
 async def list_uploaded_files():
     try:
@@ -218,3 +197,45 @@ async def segment_liver_slice(
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
+
+from fastapi import status, Query
+
+@router.delete(
+    "/delete/{file_id}",
+    summary="Удалить файл и (опционально) маски",
+    description="Удаляет .nii/.nii.gz и, если указано, маски, связанные с file_id."
+)
+async def delete_file(file_id: str, delete_masks: bool = Query(default=False, description="Удалять ли маски")):
+    try:
+        deleted_files = []
+
+        # Удаление основного файла (nii или nii.gz)
+        for suffix in [".nii", ".nii.gz"]:
+            object_name = f"{file_id}{suffix}"
+            try:
+                minio_client.remove_object(MINIO_BUCKET_NAME, object_name)
+                deleted_files.append(object_name)
+            except Exception:
+                pass  # Файл мог не существовать — не ошибка
+
+        # Удаление масок, если включено
+        if delete_masks:
+            objects = minio_client.list_objects(MINIO_BUCKET_NAME, prefix=f"{file_id}_mask_", recursive=True)
+            for obj in objects:
+                try:
+                    minio_client.remove_object(MINIO_BUCKET_NAME, obj.object_name)
+                    deleted_files.append(obj.object_name)
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Ошибка при удалении маски: {str(e)}")
+
+        if not deleted_files:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Файлы не найдены")
+
+        return {
+            "message": "Файлы удалены",
+            "deleted": deleted_files,
+            "masks_deleted": delete_masks
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при удалении: {str(e)}")
