@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+segmentation_models_pytorch
+torch
+nibabel
+opencv-python-headless
+albumentations
+python-multipart
+pydantic
+redis
+aioredis
