@@ -57,9 +57,7 @@ cd liver-segmentation
 # 2. Постройте образ и запустите сервис в фоне
 docker-compose up --build -d
 
-# 3. Откройте браузер
-#    (по умолчанию front-end — :8000, back-end API — :8001)
-http://localhost:8000
+# 3. Откройте браузер: http://localhost
 ```
 ---
 
